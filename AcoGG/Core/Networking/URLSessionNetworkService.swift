@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+// MARK: - URLSession Network Service Implementation
+class URLSessionNetworkService: NetworkService {
+
+}

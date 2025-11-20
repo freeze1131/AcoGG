@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+// MARK: - Concrete APIEndpoint Implementation (League of Legends)
+enum LoLAPIEndpoint: APIEndpoint {
+ 
+}
