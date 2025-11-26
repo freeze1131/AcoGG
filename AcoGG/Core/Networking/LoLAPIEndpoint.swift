@@ -17,6 +17,8 @@ enum LoLAPIEndpoint: APIEndpoint {
     // case searchSummoner(name: String, region: String)
     case getSummonerByPUUID(puuid: String, region: String)
     case getSummonerByID(id: String, region: String)
+    case searchByRiotID(gameName: String, tagLine: String, region: String)
+
     
     // Match endpoints
     case getMatchHistory(puuid: String, region: String, queue: Int = 0,start: Int = 0, count: Int = 20)
@@ -36,7 +38,9 @@ enum LoLAPIEndpoint: APIEndpoint {
              .getMatchHistory(_, let region, _, _, _),
              .getMatchDetails(_, let region),
              .getChampionMastery(_, let region),
-             .getTop5ChampionMastery(_, let region, _):
+             .getTop5ChampionMastery(_, let region, _),
+             .searchByRiotID(_, _, let region):
+ 
             
             // Map region codes to Riot's regional API endpoints
             let regionalEndpoint: String
@@ -66,6 +70,8 @@ enum LoLAPIEndpoint: APIEndpoint {
             return "/lol/summoner/v4/summoners/by-puuid/\(puuid)"
         case .getSummonerByID(let summonerId, _):
             return "/lol/summoner/v4/summoners/\(summonerId)"
+        case .searchByRiotID(let gameName, let tagLine, _):
+            return "/riot/account/v1/accounts/by-riot-id/\(gameName)/\(tagLine)"
         case .getMatchHistory(let puuid, _, _, _, _):
             return "/lol/match/v5/matches/by-puuid/\(puuid)/ids"
         case .getMatchDetails(let matchId, _):
