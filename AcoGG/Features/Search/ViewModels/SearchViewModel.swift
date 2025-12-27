@@ -15,7 +15,7 @@ class SearchViewModel: ObservableObject {
     @Published var searchResults: [SearchResult] = []
     @Published var state: LoadingState = .idle
     @Published var errorMessage: String?
-    @Published var selectedRegion: String = "na1"
+    @Published var selectedRegion: String = "euw1"
     
     private let networkService: NetworkService
     private var cancellables = Set<AnyCancellable>()

@@ -22,22 +22,18 @@ struct SearchView: View {
                     .pickerStyle(.menu)
                     .padding(.horizontal)
                     
-                    TextField("Enter gameName#tagLine", text: $viewModel.searchText)
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal)
-                    
-                    Button(action: {
-                        viewModel.search()
-                    }) {
-                        Text("Search")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                            .padding(.horizontal)
+                    HStack {
+                        TextField("Enter gameName#tagLine", text: $viewModel.searchText)
+                            .textFieldStyle(.roundedBorder)
+
+                        Button(action: {
+                            viewModel.search()
+                        }) {
+                            Image(systemName: "magnifyingglass.circle.fill")
+                                .font(.system(size: 30))
+                        }
                     }
-                    .disabled(viewModel.searchText.isEmpty)
+                    .padding(.horizontal)
                 }
                 .padding(.top)
                 
@@ -134,7 +130,7 @@ struct SearchView: View {
 
 // MARK: - Preview (temporary, will error until you set up environment)
 #Preview {
-    let mockNetworkService = URLSessionNetworkService(apiKey: "YOUR_API_KEY")
+    let mockNetworkService = URLSessionNetworkService(apiKey: "RGAPI-07368356-9561-42ac-8651-3310cf284821")
     let viewModel = SearchViewModel(networkService: mockNetworkService)
     SearchView(viewModel: viewModel)
 }
