@@ -33,7 +33,6 @@
 		94F29EB72ED6D4EB0042E522 /* Exceptions for "AcoGG" folder in "AcoGG" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Core/Utils/gitkeep,
 				Features/MasterySummary/gitkeep,
 			);
 			target = 94066B6B2ECDF6660056E0D4 /* AcoGG */;

@@ -8,7 +8,6 @@
 import Foundation
 
 // MARK: - URLSession Network Service Implementation
-// MARK: - URLSession Network Service Implementation
 class URLSessionNetworkService: NetworkService {
     private let apiKey: String
     private let session: URLSession
@@ -39,7 +38,7 @@ class URLSessionNetworkService: NetworkService {
         
         // Set headers
         var headers = endpoint.headers ?? [:]
-        headers["Authorization"] = "Bearer \(apiKey)"
+        headers["X-Riot-Token"] = apiKey
         request.allHTTPHeaderFields = headers
         
         // Set body if needed
@@ -47,9 +46,15 @@ class URLSessionNetworkService: NetworkService {
             request.httpBody = try JSONEncoder().encode(body)
         }
         
+        // 🔵 Log Request
+        logRequest(url: url, method: endpoint.method, headers: headers, body: request.httpBody)
+        
         // Make request
         do {
             let (data, response) = try await session.data(for: request)
+            
+            // 🔵 Log Response
+            logResponse(url: url, data: data, response: response)
             
             // Handle HTTP response
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -85,9 +90,74 @@ class URLSessionNetworkService: NetworkService {
                 throw NetworkError.decodingError(error)
             }
         } catch let error as NetworkError {
+            // 🔵 Log Error
+            logError(url: url, error: error)
             throw error
         } catch {
+            // 🔵 Log Error
+            logError(url: url, error: error)
             throw NetworkError.unknown(error)
         }
+    }
+    
+    // MARK: - Logging Helpers
+    
+    private func logRequest(url: URL, method: HTTPMethod, headers: [String: String], body: Data?) {
+        print("\nNetworkManager: 🌐 ===== API REQUEST =====")
+        print("NetworkManager: 📍 URL: \(url.absoluteString)")
+        print("NetworkManager: 🔧 Method: \(method.rawValue)")
+        print("NetworkManager: 📋 Headers:")
+        headers.forEach { key, value in
+            // Hide sensitive API key (show only first 15 chars)
+            if key == "X-Riot-Token" {
+                print("NetworkManager:    \(key): \(value.prefix(15))...")
+            } else {
+                print("NetworkManager:    \(key): \(value)")
+            }
+        }
+        if let body = body, let bodyString = String(data: body, encoding: .utf8) {
+            print("NetworkManager: 📦 Body: \(bodyString)")
+        }
+        print("NetworkManager: ========================\n")
+    }
+    
+    private func logResponse(url: URL, data: Data, response: URLResponse?) {
+        print("\nNetworkManager: ✅ ===== API RESPONSE =====")
+        print("NetworkManager: 📍 URL: \(url.absoluteString)")
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            let statusEmoji = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 ? "✅" : "⚠️"
+            print("NetworkManager: \(statusEmoji) Status Code: \(httpResponse.statusCode)")
+        }
+        
+        // Pretty print JSON response
+        if let jsonString = String(data: data, encoding: .utf8) {
+            if let jsonData = jsonString.data(using: .utf8),
+               let jsonObject = try? JSONSerialization.jsonObject(with: jsonData),
+               let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted),
+               let prettyString = String(data: prettyData, encoding: .utf8) {
+                print("NetworkManager: 📄 Response Body:\n\(prettyString)")
+            } else {
+                print("NetworkManager: 📄 Response Body: \(jsonString)")
+            }
+        } else {
+            print("NetworkManager: 📄 Response: [Binary Data - \(data.count) bytes]")
+        }
+        
+        print("NetworkManager: ===========================\n")
+    }
+    
+    private func logError(url: URL, error: Error) {
+        print("\nNetworkManager: ❌ ===== API ERROR =====")
+        print("NetworkManager: 📍 URL: \(url.absoluteString)")
+        
+        if let networkError = error as? NetworkError {
+            print("NetworkManager: ⚠️ Error Type: \(networkError)")
+            print("NetworkManager: 💬 Description: \(networkError.errorDescription ?? "No description")")
+        } else {
+            print("NetworkManager: ⚠️ Error: \(error.localizedDescription)")
+        }
+        
+        print("NetworkManager: ========================\n")
     }
 }

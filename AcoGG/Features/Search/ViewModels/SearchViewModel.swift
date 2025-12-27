@@ -1,12 +1,5 @@
-//
-//  SearchViewModel.swift
-//  AcoGG
-//
-//  Created by Ahmet Ozen on 26.11.2025.
-//
-
 import SwiftUI
-internal import Combine
+import Combine
 
 // MARK: - Loading State
 enum LoadingState {
@@ -19,15 +12,36 @@ enum LoadingState {
 // MARK: - Search View Model
 class SearchViewModel: ObservableObject {
     @Published var searchText: String = ""
-    @Published var searchResults: [SummonerDTO] = []
+    @Published var searchResults: [SearchResult] = []
     @Published var state: LoadingState = .idle
     @Published var errorMessage: String?
+    @Published var selectedRegion: String = "na1"
     
     private let networkService: NetworkService
-    private let region: String = "tr1"
+    private var cancellables = Set<AnyCancellable>()
     
     init(networkService: NetworkService) {
         self.networkService = networkService
+        setupSearchDebounce()
+    }
+    
+    // MARK: - Auto-search Setup
+    private func setupSearchDebounce() {
+        $searchText
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] text in
+                guard let self = self else { return }
+                // Auto-search if text contains # and is not empty
+                let trimmed = text.trimmingCharacters(in: .whitespaces)
+                if trimmed.contains("#") && !trimmed.isEmpty {
+                    self.search()
+                } else if trimmed.isEmpty {
+                    // Clear results when text is cleared
+                    self.clearResults()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Search Method
@@ -63,17 +77,24 @@ class SearchViewModel: ObservableObject {
         Task {
             do {
                 // First: Get account info (PUUID) using Riot ID
-                let account = try await networkService.fetch(
-                    from: LoLAPIEndpoint.searchByRiotID(gameName: gameName, tagLine: tagLine, region: region)
-                ) as AccountDTO
-
+                let account: AccountDTO = try await networkService.fetch(
+                    from: LoLAPIEndpoint.searchByRiotID(gameName: gameName, tagLine: tagLine, region: selectedRegion)
+                )
+                
+                // Second: Get full summoner info using PUUID
                 let summoner: SummonerDTO = try await networkService.fetch(
-                    from: LoLAPIEndpoint.getSummonerByPUUID(puuid: account.puuid, region: region)
+                    from: LoLAPIEndpoint.getSummonerByPUUID(puuid: account.puuid, region: selectedRegion)
                 )
                 
                 // 6. Success - update on main thread
                 await MainActor.run {
-                    self.searchResults = [summoner]
+                    let result = SearchResult(
+                        id: summoner.puuid,
+                        gameName: account.gameName,
+                        tagLine: account.tagLine,
+                        summoner: summoner
+                    )
+                    self.searchResults = [result]
                     self.state = .success
                 }
                 
@@ -90,7 +111,6 @@ class SearchViewModel: ObservableObject {
     
     // MARK: - Clear Results
     func clearResults() {
-        searchText = ""
         searchResults = []
         state = .idle
         errorMessage = nil
